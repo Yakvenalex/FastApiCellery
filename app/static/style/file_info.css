@@ -1,0 +1,136 @@
+:root {
+    --primary: #5b21b6;
+    --primary-hover: #7c3aed;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.file-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.countdown {
+    color: #dc2626;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.file-details {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--bg);
+    border-radius: 0.5rem;
+}
+
+.file-name {
+    font-size: 1.2rem;
+    font-weight: 500;
+    word-break: break-all;
+    margin-bottom: 1rem;
+}
+
+.file-icon {
+    width: 64px;
+    height: 64px;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    text-decoration: none;
+}
+
+.download-btn:hover {
+    background: var(--primary-hover);
+}
+
+.download-icon {
+    width: 20px;
+    height: 20px;
+}
+
+@media (max-width: 480px) {
+    .file-container {
+        padding: 1rem;
+    }
+
+    .file-details {
+        padding: 1rem;
+    }
+
+    .countdown {
+        font-size: 1rem;
+    }
+}
+
+.home-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #007BFF; /* Изменено на синий */
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .home-btn:hover {
+            background-color: #0056b3; /* Темнее синий при наведении */
+            transform: scale(1.05);
+        }
+
+        .home-btn:active {
+            background-color: #004085; /* Еще темнее при нажатии */
+            transform: scale(0.95);
+        }
+
+        .home-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .error-message {
+            color: #333; /* Цвет текста для лучшей видимости */
+            font-size: 18px; /* Увеличен размер шрифта */
+            margin-bottom: 20px; /* Добавлен отступ снизу */
+        }

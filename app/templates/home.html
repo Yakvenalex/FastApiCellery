@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Временное файловое хранилище</title>
+    <link href="/static/style/home.css" rel="stylesheet" type="text/css">
+    <style>
+    /* Стиль для модального окна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8); /* Темный фон с более мягкой прозрачностью */
+    backdrop-filter: blur(5px); /* Эффект размытия заднего фона */
+}
+
+.modal-content {
+    background: linear-gradient(145deg, #ffffff, #f0f0f0); /* Нежный градиентный фон */
+    margin: 8% auto; /* Уменьшено расстояние сверху */
+    padding: 40px; /* Увеличено внутреннее заполнение */
+    border-radius: 12px; /* Более плавные закругленные углы */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3); /* Более выраженная тень для глубины */
+    width: 75%;
+    max-width: 600px; /* Максимальная ширина модального окна */
+    animation: fadeIn 0.3s ease-out; /* Анимация появления */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.close {
+    color: #ff4d4d; /* Красный цвет для кнопки закрытия */
+    float: right;
+    font-size: 24px; /* Чуть уменьшен размер */
+    font-weight: bold;
+    transition: color 0.2s ease-in-out;
+}
+
+.close:hover,
+.close:focus {
+    color: #ff1a1a; /* Более темный красный при наведении */
+    text-decoration: none;
+    cursor: pointer;
+}
+
+h2 {
+    color: #222; /* Более темный и насыщенный цвет для заголовка */
+    font-size: 24px;
+    margin-bottom: 20px; /* Увеличен отступ снизу */
+    font-weight: 600;
+    text-align: center;
+}
+
+#deletionTime {
+    font-size: 18px; /* Увеличен размер шрифта */
+    color: #666; /* Более насыщенный серый */
+    margin-bottom: 25px; /* Отступ снизу */
+    text-align: center; /* Выравнивание текста по центру */
+}
+
+button {
+    padding: 12px 20px; /* Более крупные кнопки */
+    border-radius: 8px; /* Более плавные углы кнопок */
+    border: none;
+    cursor: pointer;
+    font-size: 18px; /* Увеличен размер шрифта кнопок */
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+#shareLinkBtn {
+    background-color: #007bff; /* Синий цвет для кнопки "Поделиться" */
+    color: white;
+    margin-right: 10px; /* Отступ справа между кнопками */
+}
+
+#shareLinkBtn:hover {
+    background-color: #0056b3; /* Темно-синий при наведении */
+    box-shadow: 0 4px 15px rgba(0, 91, 187, 0.4); /* Тень при наведении */
+}
+
+#deleteFileBtn {
+    background-color: #dc3545; /* Красный цвет для кнопки "Удалить" */
+    color: white;
+    margin-left: 10px; /* Отступ слева между кнопками */
+}
+
+#deleteFileBtn:hover {
+    background-color: #c82333; /* Темно-красный при наведении */
+    box-shadow: 0 4px 15px rgba(200, 35, 51, 0.4); /* Тень при наведении */
+}
+
+button:focus {
+    outline: none; /* Убираем стандартное выделение */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Стильное выделение кнопки */
+}
+</style>
+
+</head>
+<body>
+<div class="upload-container">
+    <div class="upload-area" id="dropZone">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <h2>Перетащите файл сюда</h2>
+        <p>или</p>
+        <button type="button" id="selectFile">Выберите файл</button>
+        <input type="file" id="fileInput" style="display: none">
+    </div>
+
+    <div class="file-info" id="fileInfo" style="display: none;">
+        <p>Выбранный файл: <span id="fileName"></span></p>
+        <p>Размер: <span id="fileSize"></span></p>
+    </div>
+
+    <select id="lifetime">
+        {% for item in lifetime_list %}
+        <option value="{{ item.value }}">{{ item.text }}</option>
+        {% endfor %}
+    </select>
+
+    <button id="uploadBtn" disabled>Отправить файл</button>
+    <div class="error" id="errorMsg" style="display: none;"></div>
+    <div id="file-link"></div>
+</div>
+
+<!-- Модальное окно -->
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Ваш файл будет удален...</h2>
+        <p id="deletionTime"></p>
+        <button id="shareLinkBtn">Поделиться файлом</button>
+        <button id="deleteFileBtn">Удалить файл</button>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectFile = document.getElementById('selectFile');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const fileLink = document.getElementById('file-link');
+
+    // Модальное окно
+    const modal = document.getElementById("myModal");
+    const closeModal = document.getElementsByClassName("close")[0];
+    const deletionTimeText = document.getElementById("deletionTime");
+
+    // Максимальный размер файла (100MB в байтах)
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
+
+    selectFile.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', handleFileSelect);
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#f8f4ff';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.background = 'white';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.background = 'white';
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            handleFile(files[0]);
+        }
+    });
+
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length) {
+            handleFile(files[0]);
+        }
+    }
+
+    function handleFile(file) {
+        errorMsg.style.display = 'none';
+
+        if (file.size > MAX_FILE_SIZE) {
+            showError('Файл слишком большой. Максимальный размер: 100MB');
+            return;
+        }
+
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+        uploadBtn.disabled = false;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function showError(message) {
+        errorMsg.textContent = message;
+        errorMsg.style.display = 'block';
+        fileInfo.style.display = 'none';
+        uploadBtn.disabled = true;
+    }
+
+    uploadBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const lifetime = document.getElementById('lifetime').value;
+
+        // Создаем объект FormData и добавляем файл и время истечения
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('expiration_minutes', lifetime);
+
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Загрузка...';
+
+        try {
+            // Замените URL на реальный endpoint вашего сервера
+            const response = await fetch('/api/upload/', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                fileLink.textContent = `Ссылка на файл: ${data.download_url}`;
+                fileLink.style.display = 'block';
+
+                // Открываем модальное окно с информацией о времени удаления
+                const expirationTimeDate = new Date(data.expiration_time);
+                deletionTimeText.textContent = `Файл будет удален ${expirationTimeDate.toLocaleString()}`;
+                modal.style.display = "block";
+
+                // Обработчик для кнопки "Поделиться файлом"
+                document.getElementById("shareLinkBtn").onclick = () => {
+                    navigator.clipboard.writeText(data.view_url).then(() => {
+                        alert("Ссылка на файл скопирована в буфер обмена!");
+                    });
+                };
+
+                // Обработчик для кнопки "Удалить файл"
+                document.getElementById("deleteFileBtn").onclick = async () => {
+                    try {
+                        const deleteResponse = await fetch(`/delete/${data.file_id}/${data.dell_id}`, { method: 'DELETE' });
+                        if (deleteResponse.ok) {
+                            alert("Файл успешно удален!");
+                            modal.style.display = "none"; // Закрываем модальное окно
+                            location.reload();
+                        } else {
+                            alert("Ошибка при удалении файла.");
+                        }
+                    } catch (error) {
+                        console.error("Ошибка при удалении файла:", error);
+                    }
+                };
+
+            } else {
+                showError('Ошибка при загрузке файла');
+            }
+
+         } catch (error) {
+             showError('Ошибка при загрузке файла');
+         } finally {
+             uploadBtn.disabled = false;
+             uploadBtn.textContent = 'Отправить файл';
+
+             // Сброс состояния после загрузки
+             fileInput.value = '';
+             fileInfo.style.display = 'none';
+             uploadBtn.disabled = true;
+             errorMsg.style.display = 'none';
+         }
+     });
+
+     // Закрытие модального окна
+     closeModal.onclick = function() {
+         modal.style.display = "none";
+         location.reload();
+     };
+
+     window.onclick = function(event) {
+         if (event.target == modal) {
+             modal.style.display = "none";
+             location.reload();
+         }
+     };
+</script>
+</body>
+</html>
